@@ -1804,7 +1804,9 @@ function webViewerInitialized() {
     appConfig.secondaryToolbar.presentationModeButton.classList.add('hidden');
   }
 
-  appConfig.toolbar.viewFind.classList.add('hidden')
+  if (PDFViewerApplication.supportsIntegratedFind) {
+    appConfig.toolbar.viewFind.classList.add('hidden');
+  }
 
   appConfig.mainContainer.addEventListener('transitionend', function (evt) {
     if (evt.target === this) {
