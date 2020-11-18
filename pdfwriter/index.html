@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html style="height: 100%;font-family: Helvetica;background-color: transparent;">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="pdfkit.standalone.js"></script>
+  <script src="blob-stream.js"></script>
+</head>
+<body style=" display: flex; flex: 1; margin: 0; height: 100%;">
+  <p style="margin: auto">Please wait...</p>
+</body>
+<script type="text/javascript">
+const fonts = {
+  n: 'Normal',
+  b: 'Bold',
+  icon: 'Icon',
+};
+let doc = null;
+let normalFont = null;
+let boldFont = null;
+let awesomeFont = null;
+let docWidth = null;
+let docHeight = null;
+let defaultFontSize;
+let defaultColor;
+async function getFont(doc, type = 'n') {
+  if (type === 'b' && doc._registeredFonts.Bold === undefined) {
+    if (!boldFont) {
+      const font = await fetch('./fonts/HelveticaNeue-Bold.ttf');
+      boldFont = await font.arrayBuffer();
+    }
+    doc.registerFont('Bold', boldFont);
+  }
+  if (type === 'icon' && doc._registeredFonts.Icon === undefined) {
+    if (!awesomeFont) {
+      const font = await fetch('./fonts/fa-solid-900.ttf');
+      awesomeFont = await font.arrayBuffer();
+    }
+    doc.registerFont('Icon', awesomeFont);
+  }
+  return fonts[type] || 'Normal';
+}
+
+function getImageSize(doc, image) {
+  const img  = doc.openImage(image);
+  // console.log(img);
+  return {
+    width: img.width * 0.75,
+    height: img.height * 0.75,
+  }
+}
+
+function addImage(doc, image, options) {
+  let { width } = options;
+  if (width === undefined) {
+    width = null;
+  }
+  let imgWidth;
+  const img  = getImageSize(doc, image);
+  if (width === null) {
+    // full width
+    imgWidth = docWidth;
+  } else {
+    imgWidth = width > docWidth ? docWidth : width;
+  }
+  const imgHeight = Math.round((imgWidth / img.width) * img.height);
+  const n = imgHeight + doc.y;
+  if (n > doc.page.maxY()) {
+    doc.addPage();
+  }
+  doc.image(image, undefined, undefined, {fit: [imgWidth, img.height], align: 'center', valign: 'center'} );
+  if (img.height - imgHeight > 0) {
+    doc.y += img.height;
+  }
+  return doc;
+}
+
+async function addIcon(doc, icon, style = null, opts = null) {
+  if (style !== null && style !== undefined) {
+    const { fontSize, color } = style;
+    if (fontSize !== undefined) {
+      doc.fontSize(fontSize);
+    }
+    if (color !== undefined) {
+      doc.fillColor(color);
+    }
+  }
+  let options = {};
+  if (opts !== null && opts !== undefined) {
+    options = opts;
+  }
+  doc.font(await getFont(doc, 'icon')).text(icon, options);
+}
+
+async function addText(doc, text, style = null, opts = null) {
+  let font = 'n';
+  if (style !== null && style !== undefined) {
+    const { fontSize, color } = style;
+    if (style.font !== undefined) {
+      font = style.font;
+    }
+    if (fontSize !== undefined) {
+      doc.fontSize(fontSize);
+    }
+    if (color !== undefined) {
+      doc.fillColor(color);
+    }
+  }
+  let options = {};
+  if (opts !== null && opts !== undefined) {
+    options = opts;
+  }
+  doc.font(await getFont(doc, font)).text(text, options);
+}
+
+async function addFormattedText(doc, texts, style = null, opts = null) {
+  let textColor = defaultColor;
+  if (style !== null && style !== undefined) {
+    const { fontSize, color } = style;
+    if (fontSize !== undefined) {
+      doc.fontSize(fontSize);
+    }
+    if (color !== undefined) {
+      doc.fillColor(color);
+      textColor = color;
+    }
+  }
+  let options = {};
+  if (opts !== null && opts !== undefined) {
+    options = opts;
+  }
+
+  for (let i = 0; i < texts.length; i += 1) {
+    const { text, type } = texts[i];
+    if (texts[i].color !== undefined) {
+      doc.fillColor(texts[i].color);
+    }
+    const continued = i < texts.length - 1;
+    doc.font(await getFont(doc, type)).text(text, Object.assign({}, options, { continued }));
+    if (texts[i].color !== undefined) {
+      // reset
+      doc.fillColor(textColor);
+    }
+  }
+  // doc.moveDown(1);
+}
+
+async function createPDF(data, options = null) {
+  defaultFontSize = 11;
+  defaultColor = '#222222';
+  if (options) {
+    if (options.defaultFontSize) {
+      defaultFontSize = options.defaultFontSize;
+    }
+    if (options.defaultColor) {
+      defaultColor = options.defaultColor;
+    }
+  }
+  doc = new PDFDocument({ margin: 30 });
+  docWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  docHeight = doc.page.height - doc.page.margins.top - doc.page.margins.bottom;
+  // console.log(doc);return;
+  if (!normalFont) {
+    const font = await fetch('./fonts/HelveticaNeue.ttf');
+    normalFont = await font.arrayBuffer();
+  }
+  doc.registerFont('Normal', normalFont);
+  const stream = doc.pipe(blobStream());
+
+  for (let i = 0; i < data.length; i += 1) {
+    const { item, type } = data[i];
+    if (type === 'addPage') {
+      const { options } = item;
+      doc.addPage(options);
+    } else if (type === 'move') {
+      const { direction, value } = item;
+      if (direction === 'up') {
+        doc.moveUp(value === undefined ? 1 : value);
+      }
+      if (direction === 'down') {
+        doc.moveDown(value === undefined ? 1 : value);
+      }
+    } else if (type === 'icon') {
+      const { icon, style, options } = item;
+      await addIcon(doc, icon, style, options );
+    } else if (type === 'text') {
+      const { text, style, options } = item;
+      await addText(doc, text, style, options);
+    } else if (type === 'formatted-text') {
+      const { text, style, options } = item;
+      await addFormattedText(doc, text, style, options)
+    } else if (type === 'image') {
+      const { image, options } = item;
+      let opts = {};
+      if (options !== null && options !== undefined) {
+        opts = options;
+      }
+      addImage(doc, image, opts);
+    }
+
+    // reset
+    doc.fontSize(defaultFontSize);
+    doc.fillColor(defaultColor);
+  }
+
+  doc.end();
+
+  stream.on('finish', (p) => {
+    // console.log('finish');
+    window.parent.postMessage({
+      type: 'finish',
+      data: stream.toBlob('application/pdf'),
+    }, '*');
+  });
+}
+window.addEventListener('load', async function() {
+  console.log('All assets are loaded');
+  function onReceivedMessage(event) {
+    if (!event.data) {
+      return;
+    }
+    const { data, options } = event.data;
+    if (data === undefined) {
+      return;
+    }
+    createPDF(data, options);
+  }
+  // console.log('addEventListener');
+  window.addEventListener('message', onReceivedMessage);
+  window.parent.postMessage({
+    type: 'ready',
+  }, '*');
+})
+</script>
+
+</html>
