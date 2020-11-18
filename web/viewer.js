@@ -15340,16 +15340,7 @@ function renderProgress(index, total, l10n) {
 }
 
 window.addEventListener('keydown', function (event) {
-  if (event.keyCode === 80 && (event.ctrlKey || event.metaKey) && !event.altKey && (!event.shiftKey || window.chrome || window.opera)) {
-    window.print();
-    event.preventDefault();
-
-    if (event.stopImmediatePropagation) {
-      event.stopImmediatePropagation();
-    } else {
-      event.stopPropagation();
-    }
-  }
+  
 }, true);
 
 if ('onbeforeprint' in window) {
