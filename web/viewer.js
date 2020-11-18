@@ -145,9 +145,9 @@ function getViewerConfiguration() {
       next: document.getElementById('next'),
       zoomIn: document.getElementById('zoomIn'),
       zoomOut: document.getElementById('zoomOut'),
-      viewFind: document.getElementById('viewFind'),
+      // viewFind: document.getElementById('viewFind'),
       openFile: document.getElementById('openFile'),
-      print: document.getElementById('print'),
+      // print: document.getElementById('print'),
       close: document.getElementById('close'),
       presentationModeButton: document.getElementById('presentationMode'),
       download: document.getElementById('download'),
@@ -159,7 +159,7 @@ function getViewerConfiguration() {
       toolbarButtonContainer: document.getElementById('secondaryToolbarButtonContainer'),
       presentationModeButton: document.getElementById('secondaryPresentationMode'),
       openFileButton: document.getElementById('secondaryOpenFile'),
-      printButton: document.getElementById('secondaryPrint'),
+      // printButton: document.getElementById('secondaryPrint'),
       closeButton: document.getElementById('secondaryClose'),
       downloadButton: document.getElementById('secondaryDownload'),
       viewBookmarkButton: document.getElementById('secondaryViewBookmark'),
@@ -200,7 +200,7 @@ function getViewerConfiguration() {
     },
     findBar: {
       bar: document.getElementById('findbar'),
-      toggleButton: document.getElementById('viewFind'),
+      // toggleButton: document.getElementById('viewFind'),
       findField: document.getElementById('findInput'),
       highlightAllCheckbox: document.getElementById('findHighlightAll'),
       caseSensitiveCheckbox: document.getElementById('findMatchCase'),
@@ -247,7 +247,7 @@ function getViewerConfiguration() {
       moreInfoButton: document.getElementById('errorShowMore'),
       lessInfoButton: document.getElementById('errorShowLess')
     },
-    printContainer: document.getElementById('printContainer'),
+    // printContainer: document.getElementById('printContainer'),
     openFileInputName: 'fileInput',
     debuggerScriptPath: './debugger.js'
   };
@@ -15338,10 +15338,6 @@ function renderProgress(index, total, l10n) {
     progressPerc.textContent = msg;
   });
 }
-
-window.addEventListener('keydown', function (event) {
-  
-}, true);
 
 if ('onbeforeprint' in window) {
   var stopPropagationIfNeeded = function stopPropagationIfNeeded(event) {
